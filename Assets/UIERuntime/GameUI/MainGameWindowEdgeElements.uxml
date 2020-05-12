@@ -1,0 +1,16 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
+    <ui:VisualElement name="screen" style="flex-grow: 1;&#10;flex-direction: row;&#10;">
+        <Style src="MainGameWindowEdgeElements.uss" />
+        <ui:VisualElement name="right" style="flex-grow: 0;&#10;width: 200px;&#10;background-color: rgba(0, 0, 136, 0.53);&#10;">
+            <ui:Button name="unfoldRessourcesButton" tooltip="Unfold Ressources Tab " class="unfold-panel-button" style="width: 10px;&#10;height: 15px;&#10;background-color: rgba(0, 0, 0, 0.9);&#10;">
+                <ui:VisualElement name="right-arrow" class="right-arrow" />
+            </ui:Button>
+        </ui:VisualElement>
+        <ui:VisualElement name="middle" style="flex-grow: 1;&#10;" />
+        <ui:VisualElement name="left" style="flex-grow: 0;&#10;width: 200px;&#10;flex-direction: row-reverse;&#10;background-color: rgba(0, 0, 136, 0.55);&#10;">
+            <ui:Button name="unfoldScoreButton" tooltip="Unfold Score Panel" focusable="false" class="unfolde-panel-button" style="width: 10px;&#10;height: 15px;&#10;background-color: rgba(0, 0, 0, 0.8);&#10;">
+                <ui:VisualElement name="left-arrow" class="left-arrow" />
+            </ui:Button>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>
