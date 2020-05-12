@@ -4,9 +4,11 @@ using UnityEngine;
 
 public class Building : MonoBehaviour
 {
+    #region variables
     public GameObject objectSpawned;
 
     Grid grid;
+    #endregion
 
     // Start is called before the first frame update
     void Awake()

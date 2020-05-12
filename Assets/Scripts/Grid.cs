@@ -4,8 +4,10 @@ using UnityEngine;
 
 public class Grid : MonoBehaviour
 {
+    #region
     [SerializeField]
     private float size;
+    #endregion
 
     public Vector3 GetNearestPointOnGrid(Vector3 position)
     {
