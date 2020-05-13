@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.AI;
 
 public class Unit : MonoBehaviour
 {
@@ -10,12 +11,14 @@ public class Unit : MonoBehaviour
     bool selected;
 
     Renderer mRenderer;
+    NavMeshAgent agent;
     #endregion
 
     // Start is called before the first frame update
     void Start()
     {
         mRenderer = GetComponent<Renderer>();
+        agent = GetComponent<NavMeshAgent>();
 
         mRenderer.material = defaultMatirial;
     }
@@ -30,6 +33,17 @@ public class Unit : MonoBehaviour
         else
         {
             mRenderer.material = defaultMatirial;
+        }
+
+        if (selected && Input.GetMouseButton(1))
+        {
+            Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+            RaycastHit hit;
+
+            if (Physics.Raycast(ray, out hit))
+            {
+                agent.SetDestination(hit.point);
+            }
         }
     }
 
