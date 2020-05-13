@@ -21,8 +21,10 @@ public class Grid : MonoBehaviour
     
     [SerializeField]
     private bool drawGrid = true;
-    #endregion
     
+    [SerializeField]
+    private Material mat;
+    #endregion
 
     public Vector3 GetNearestPointOnGrid(Vector3 position)
     {
@@ -42,10 +44,23 @@ public class Grid : MonoBehaviour
         return result;
     }
 
-
-    
-    private void OnDrawGizmos()
+    void OnRenderObject()
     {
+        RenderLines();
+    }
+
+    void OnDrawGizmos()
+    {
+        RenderLines();
+    }
+    
+    private void RenderLines()
+    {
+        
+        GL.Begin(GL.LINES);
+        mat.SetPass(0);
+
+        
         Gizmos.color = Color.yellow;
     
         int storedX = 0;
@@ -72,13 +87,29 @@ public class Grid : MonoBehaviour
                     point.y += liftFromGround;
                     drawPoint2.y += liftFromGround;
                     drawPoint3.y += liftFromGround;
-                    Debug.DrawLine(point, drawPoint2, Color.red, 0.01f);
-                    Debug.DrawLine(point, drawPoint3, Color.red, 0.01f);
+                    
+                    // The Debug Line way
+                    // Debug.DrawLine(point, drawPoint2, Color.red, 0.01f);
+                    // Debug.DrawLine(point, drawPoint3, Color.red, 0.01f);
+                    
+                    
+                    // The GL way
+                    GL.Color(Color.red);
+                    GL.Vertex(point);
+                    GL.Color(Color.red);
+                    GL.Vertex(drawPoint2);
+                    
+                    GL.Color(Color.red);
+                    GL.Vertex(point);
+                    GL.Color(Color.red);
+                    GL.Vertex(drawPoint3);
                     
                 }
                 storedY = y;
             }
             storedX = x;
         }
+        
+        GL.End();
     }
 }
