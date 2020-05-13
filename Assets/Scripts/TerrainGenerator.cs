@@ -43,6 +43,8 @@ public class TerrainGenerator : MonoBehaviour
         {
             Generate();
         }
+
+        surface.BuildNavMesh();
     }
 
     public void Generate()
