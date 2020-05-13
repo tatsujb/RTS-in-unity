@@ -35,9 +35,12 @@ public class TerrainGenerator : MonoBehaviour
 
     private void Start()
     {
+    
+    Debug.Log("Started Terrain");
         terrain = GetComponent<Terrain>();
 
         surface = GameObject.FindGameObjectWithTag("NavMesh").GetComponent<NavMeshSurface>();
+        // surface = NavMeshSurface;
 
         if (generateOnStart)
         {
@@ -49,6 +52,7 @@ public class TerrainGenerator : MonoBehaviour
 
     public void Generate()
     {        
+    Debug.Log("Generated Terrain MAIN");
         terrain.terrainData = GenerateTerrain(terrain.terrainData);
 
         if (randomize)
@@ -69,6 +73,7 @@ public class TerrainGenerator : MonoBehaviour
 
     TerrainData GenerateTerrain(TerrainData terrainData)
     {
+    Debug.Log("Generated Terrain SUBROUTINE 1");
         terrainData.heightmapResolution = xSize + 1;
 
         terrainData.size = new Vector3(xSize, height, ySize);
@@ -79,6 +84,7 @@ public class TerrainGenerator : MonoBehaviour
 
     float[,] GenerateHeights()
     {
+    Debug.Log("Generated Terrain SUBROUTINE 2");
         Texture2D noiseTex = new Texture2D(xSize, ySize);
         noiseTex.filterMode = FilterMode.Point;
 

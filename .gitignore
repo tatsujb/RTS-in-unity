@@ -62,3 +62,8 @@ crashlytics-build.properties
 # Rider files must not be added
 .idea/
 
+# Baked NavMesh
+*NavMesh-NavMeshSurface.asset
+*NavMesh-NavMeshSurface.asset.meta
+*NavMesh-NavMesh.asset
+*NavMesh-NavMesh.asset.meta
