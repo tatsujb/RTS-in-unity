@@ -1,5 +1,6 @@
 ﻿using System;
 using UnityEngine;
+using UnityEngine.AI;
 
 public class TerrainGenerator : MonoBehaviour
 {
@@ -22,32 +23,38 @@ public class TerrainGenerator : MonoBehaviour
     public bool randomize;
     public bool randomizeHeight;
 
+    public bool generateOnStart;
+
     [Header("FOR TESTING ONLY")]
     public bool testingMode;
 
     Terrain terrain;
+
+    NavMeshSurface surface;
     #endregion 
 
     private void Start()
     {
         terrain = GetComponent<Terrain>();
-        terrain.terrainData = GenerateTerrain(terrain.terrainData);
 
-        if (randomize)
+        surface = GameObject.FindGameObjectWithTag("NavMesh").GetComponent<NavMeshSurface>();
+
+        if (generateOnStart)
         {
-            Randomize();
+            Generate();
         }
     }
 
     public void Generate()
-    {
-        terrain = GetComponent<Terrain>();
+    {        
         terrain.terrainData = GenerateTerrain(terrain.terrainData);
 
         if (randomize)
         {
             Randomize();
         }
+
+        surface.BuildNavMesh();
     }
 
     private void Update()

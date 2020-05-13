@@ -6,6 +6,7 @@ TagManager:
   tags:
   - Terrain
   - Unit
+  - NavMesh
   layers:
   - Default
   - TransparentFX
