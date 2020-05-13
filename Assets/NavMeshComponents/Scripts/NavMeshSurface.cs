@@ -159,7 +159,6 @@ namespace UnityEngine.AI
         public void BuildNavMesh()
         {
             var sources = CollectSources();
-            Debug.Log("NavMesh : build nave mesh with this data : " + sources);
 
             // Use unscaled bounds - this differs in behaviour from e.g. collider components.
             // But is similar to reflection probe - and since navmesh data has no scaling support - it is the right choice here.
