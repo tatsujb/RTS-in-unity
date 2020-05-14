@@ -60,6 +60,8 @@ public class CameraController : MonoBehaviour
     private float scrollWheel = 0f;
 
     private Vector3 originalPosition;
+    private Vector3 cursor;
+    private float currentDistance = 250f; // generic non-zero value
     #endregion
 
     // Start is called before the first frame update
@@ -198,8 +200,12 @@ public class CameraController : MonoBehaviour
                 // Shoots the ray
                 if (Physics.Raycast(ray, out hit))
                 {
+                    // store the hit point for external use
+                    cursor = hit.point;
+
                     // resets the threshold based on current zoom point
                     threshHold = hit.point.y + distanceToGround;
+                    
                     // Finds angle & Moves to the target point
                     MoveToPointWithAccelerationCalculation(position, hit.point - position);
                 }
@@ -234,6 +240,9 @@ public class CameraController : MonoBehaviour
 
     public void MoveToPointWithAccelerationCalculation(Vector3 position, Vector3 direction)
     {
+        // stores distance for external use
+        currentDistance = position.y - direction.y;
+        
         // accelerating scroll according to how much you scrolled but not too much.
         float heightMult = position.y < threshHold * 1.5f ? 10f : position.y;
         float mult = heightMult / (originalPosition.y / continuousScrollsCounter < scrollMultiplier ?
@@ -273,8 +282,18 @@ public class CameraController : MonoBehaviour
         return result;
     }
 
-    public float GetDistance()
+    public float GetStartingDistance()
     {
         return distance;
+    }
+
+    public float GetCurrentDistance()
+    {
+        return currentDistance;
+    }
+    
+    public Vector3 GetCursor()
+    {
+        return cursor;
     }
 }

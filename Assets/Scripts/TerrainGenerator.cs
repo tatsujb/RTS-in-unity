@@ -37,19 +37,25 @@ public class TerrainGenerator : MonoBehaviour
     {
         
         terrain = GetComponent<Terrain>();
-
         surface = GameObject.FindGameObjectWithTag("NavMesh").GetComponent<NavMeshSurface>();
+
+        
 
         if (generateOnStart)
         {
-            Generate();
+            Generate(false);
         }
 
         surface.BuildNavMesh();
     }
 
-    public void Generate()
+    public void Generate(bool isCallFromEditor)
     {
+        if (isCallFromEditor) {
+            terrain = GetComponent<Terrain>();
+            surface = GameObject.FindGameObjectWithTag("NavMesh").GetComponent<NavMeshSurface>();
+        }
+        
         terrain.terrainData = GenerateTerrain(terrain.terrainData);
 
         if (randomize)
@@ -57,6 +63,7 @@ public class TerrainGenerator : MonoBehaviour
             Randomize();
         }
 
+        
         surface.BuildNavMesh();
     }
 

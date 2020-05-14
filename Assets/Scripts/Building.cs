@@ -33,7 +33,7 @@ public class Building : MonoBehaviour
 
     void PlaceCubeNear(Vector3 point)
     {
-        var finalPosition = grid.GetNearestPointOnGrid(point);
+        var finalPosition = grid.GetNearestPointOn3DGrid(point);
 
         Instantiate(objectSpawned, finalPosition, Quaternion.identity); // Of course we can change what it's placing
     }

@@ -5,111 +5,219 @@ using UnityEngine;
 public class Grid : MonoBehaviour
 {
     #region
-    [Header("Terrain Game Object :")]
-    public TerrainGenerator terrain;
-    
+    [Header("First point to current Camera Controller")]
     [SerializeField]
-    [Range(0.0001f, 1f)]
-    private float size = 0.5f;
-        
+    private Transform CameraController;
+
+    [Header("In Run View grid bubble around cursor when close to ground and holding shift")]
+    [SerializeField]
+    private bool cursorGridBubble = false;
+    
     [SerializeField]
     [Range(0.0001f, 0.2f)]
-    private float liftFromGround = 0.01f;
-    
+    private float liftFromGround = 0.0001f;
+    [Header("Draw 200x200 grid in Upper Right Corner of Map")]
     [SerializeField]
     private bool drawGizmos = false;
     
     [SerializeField]
-    private bool drawGrid = true;
+    private bool drawGrid = false;
+    
+    [Header("Set the material before enabling this :")]
+    [SerializeField]
+    private bool useGlInsteadOfDebugLines = false;
     
     [SerializeField]
     private Material mat;
+
+
+    private bool isShiftCurrentlyHeldDown;
+    private int count;
+    private CameraController controller;
+    private Vector3[] visibleNavMesh;
+
+    // private NavMeshSurface surface;
+    
+    // THIS IS HOW MUSH SMALLER THAN 1 DIGIT (in unityà OUR SQUALE IS FOR THE ENTIRE PROJECT
+    // WE USE THIS TO CREATE THE GRID
+    // IF MODIFIED, ORIGINAL VALUE WAS 14f
+    private static float divisionFactor = 14f;
     #endregion
-
-    public Vector3 GetNearestPointOnGrid(Vector3 position)
+    
+    private void Start()
     {
-        position -= transform.position;
+        count = 0;
+        // WIP:
+        // the code below works in TerrainGenerator but not here. I don't know why. I need navmesh to determine whether the grid
+        // shows up red or bluegreen for non-constructible or constructible.
+        // surface = GameObject.FindGameObjectWithTag("NavMesh").GetComponent<NavMeshSurface>();
+        
+        var triangles = UnityEngine.AI.NavMesh.CalculateTriangulation ();
+        Vector3[] visibleNavMesh = triangles.vertices;
 
-        int xCount = Mathf.RoundToInt(position.x / size);
-        int yCount = Mathf.RoundToInt(position.y / size);
-        int zCount = Mathf.RoundToInt(position.z / size);
+        Debug.Log("this is navMesh : " + visibleNavMesh);
+    }
 
-        Vector3 result = new Vector3(
-            (float)xCount * size,
-            (float)yCount * size,
-            (float)zCount * size);
+    /// <summary>
+    /// so far as I can tell update cannot be used to draw lines either runtime or editor-time
+    /// But I use it to grab Shift key
+    /// </summary>
+    void Update()
+    {
+        if (Input.GetKeyDown(KeyCode.LeftShift) || Input.GetKeyDown(KeyCode.RightShift))
+        {
+            isShiftCurrentlyHeldDown = true;
+        }
 
-        result += transform.position;
-
-        return result;
+        if (Input.GetKeyUp(KeyCode.LeftShift) || Input.GetKeyUp(KeyCode.RightShift))
+        {
+            isShiftCurrentlyHeldDown = false;
+        }
     }
 
     void OnRenderObject()
     {
-        RenderLines();
+        if (drawGrid && useGlInsteadOfDebugLines)
+        {
+            SmallCornerGridPreview();
+        }
     }
 
     void OnDrawGizmos()
     {
-        RenderLines();
-    }
-    
-    private void RenderLines()
-    {
-        
-        GL.Begin(GL.LINES);
-        mat.SetPass(0);
-
-        
-        Gizmos.color = Color.yellow;
-    
-        int storedX = 0;
-        int storedY = 0;
-        Vector3 previousPoint = new Vector3(0f, 0f, 0f);
-    
-        for (int x = 0; x < terrain.xSize; x++)
+        if (drawGrid)
         {
-            for (int y = 0; y < terrain.ySize; y++)
-            {
-                var point = GetNearestPointOnGrid(new Vector3(x, 0f, y));
-                if (drawGizmos && x < 40 && y < 40)
-                {
-                    Gizmos.DrawSphere(point, 0.1f);
-                }
-    
-                if (drawGrid && x < 100 && y < 100) //otherwise if you mess with terrain size above that you might crash unity
-                // if your map is under 200, visualized grid will be same size as your map
-                {
-                    int tx = 1 + x;
-                    int ty = 1 + x;
-                    var drawPoint2 = GetNearestPointOnGrid(new Vector3(tx, 0f, y));
-                    var drawPoint3 = GetNearestPointOnGrid(new Vector3(x, 0f, ty));
-                    point.y += liftFromGround;
-                    drawPoint2.y += liftFromGround;
-                    drawPoint3.y += liftFromGround;
-                    
-                    // The Debug Line way
-                    // Debug.DrawLine(point, drawPoint2, Color.red, 0.01f);
-                    // Debug.DrawLine(point, drawPoint3, Color.red, 0.01f);
-                    
-                    
-                    // The GL way
-                    GL.Color(Color.red);
-                    GL.Vertex(point);
-                    GL.Color(Color.red);
-                    GL.Vertex(drawPoint2);
-                    
-                    GL.Color(Color.red);
-                    GL.Vertex(point);
-                    GL.Color(Color.red);
-                    GL.Vertex(drawPoint3);
-                    
-                }
-                storedY = y;
-            }
-            storedX = x;
+            SmallCornerGridPreview();
+        }
+    }
+
+    /// <summary>
+    ///     This is not a method for drawing grids it only repositions given coordinate to grid
+    /// </summary>
+    /// <param name="position"></param>
+    /// <returns></returns>
+    public Vector3 GetNearestPointOn3DGrid(Vector3 position)
+    {
+        count++;
+        float record = position.x;
+        
+        position -= transform.position;
+
+        float magicFormula (float entryPoint)
+        {
+            float decimalPart = entryPoint % 1;
+            float intergerPart = entryPoint - decimalPart;
+            return Mathf.RoundToInt(decimalPart / (1 / divisionFactor)) * (1 / divisionFactor) + intergerPart;
+        };
+        
+        Vector3 result = new Vector3(
+            // width
+            magicFormula(position.x),
+            // didn't realise this but transforming height as well created a 3D grid,... which could be usefull?
+            // I'll reanme the method to avoid confusions when calling this method from elsewhere in the future
+            magicFormula(position.y),
+            // length
+            magicFormula(position.z));
+
+        result += transform.position;
+
+        if (count % 7 == 0)
+        {
+            Debug.Log("First time called intial value was : " + record + " outcome : " + position.x + " count : " + count );
         }
         
-        GL.End();
+        return result;
+    }
+
+    public void drawGridBubbleAroundCursor()
+    {
+        if (cursorGridBubble && controller.GetCurrentDistance() < 120f && isShiftCurrentlyHeldDown) 
+        {
+            if (!mat)
+            {
+                Debug.LogError("Please Assign a material on the inspector");
+                return;
+            }
+            Vector3 cursor = controller.GetCursor();
+            
+            GL.Begin(GL.LINES);
+            mat.SetPass(0);
+            int amountOfGridToDraw = 100;
+            
+            // TODO
+            
+            GL.End();
+        }
+    }
+
+    /// <summary>
+    /// this method is a debugging tool that force the drawing of the grid in the top right corner.
+    /// </summary>
+    private void SmallCornerGridPreview()
+    {
+        if (!mat)
+        {
+            Debug.LogError("Please Assign a material on the inspector");
+            return;
+        }
+        int amountOfGridToDraw = 100;
+        int amountOfGizmosToDraw = 40;
+        if (useGlInsteadOfDebugLines)
+        {
+            GL.Begin(GL.LINES);
+            mat.SetPass(0);
+        }
+
+        Gizmos.color = Color.yellow;
+
+        float currentX = 0f;
+        float currentY = 0f;
+
+        for (int x = 0; x < amountOfGridToDraw; x++)
+        {
+            for (int y = 0; y < amountOfGridToDraw; y++)
+            {
+                var point = new Vector3(currentX, 0f, currentY);
+                if (drawGizmos && x < amountOfGizmosToDraw && y < amountOfGizmosToDraw)
+                {
+                    Gizmos.DrawSphere(point, 0.2f/divisionFactor);
+                }
+    
+                if (drawGrid)
+                {                 // 0.14f, same
+                    float nextX = divisionFactor/100f + currentX;
+                    float nextY = divisionFactor/100f + currentY;
+                    var drawPoint2 = new Vector3(nextX, liftFromGround, currentY);
+                    var drawPoint3 = new Vector3(currentX, liftFromGround, nextY);
+                    point.y += liftFromGround;
+                    
+                    if (useGlInsteadOfDebugLines)
+                    {
+                        GL.Color(Color.red);
+                        GL.Vertex(point);
+                        GL.Vertex(drawPoint2);
+                        if (currentY != amountOfGridToDraw)
+                        {
+                            GL.Vertex(point);
+                            GL.Vertex(drawPoint3);
+                            currentY += divisionFactor/100f;
+                        }
+                    }
+                    else
+                    {
+                        Debug.DrawLine(point, drawPoint2, Color.red, 0.01f);
+                        Debug.DrawLine(point, drawPoint3, Color.red, 0.01f);
+                    }
+                }
+            }
+
+            currentY = 0f;
+            currentX += divisionFactor/100f;
+        }
+
+        if (useGlInsteadOfDebugLines)
+        {
+            GL.End();
+        }
     }
 }
