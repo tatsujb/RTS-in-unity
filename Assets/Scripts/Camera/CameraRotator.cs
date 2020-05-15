@@ -22,7 +22,7 @@ public class CameraRotator : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if ((cameraController.GetStartingDistance() / 4) * 3 >= transform.position.y)
+        if ((cameraController.GetStartingDistance() / 4) * 3 >= transform.position.y && !cameraController.GetZoomingOut())
         {
             if (Input.GetKey(KeyCode.Space))
             {

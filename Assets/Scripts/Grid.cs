@@ -7,7 +7,7 @@ public class Grid : MonoBehaviour
     #region
     [Header("First point to current Camera Controller")]
     [SerializeField]
-    private Transform CameraController;
+    public CameraController CameraController;
 
     [Header("In Run View grid bubble around cursor when close to ground and holding shift")]
     [SerializeField]
@@ -30,11 +30,12 @@ public class Grid : MonoBehaviour
     [SerializeField]
     private Material mat;
 
-
+    private MeshRenderer viewingGridmesh;
+    
+    private Vector3[] visibleNavMesh;
+    
     private bool isShiftCurrentlyHeldDown;
     private int count;
-    private CameraController controller;
-    private Vector3[] visibleNavMesh;
 
     // private NavMeshSurface surface;
     
@@ -47,15 +48,13 @@ public class Grid : MonoBehaviour
     private void Start()
     {
         count = 0;
-        // WIP:
-        // the code below works in TerrainGenerator but not here. I don't know why. I need navmesh to determine whether the grid
-        // shows up red or bluegreen for non-constructible or constructible.
-        // surface = GameObject.FindGameObjectWithTag("NavMesh").GetComponent<NavMeshSurface>();
         
-        var triangles = UnityEngine.AI.NavMesh.CalculateTriangulation ();
+        var triangles = UnityEngine.AI.NavMesh.CalculateTriangulation();
         Vector3[] visibleNavMesh = triangles.vertices;
 
         Debug.Log("this is navMesh : " + visibleNavMesh);
+
+        initQuad();
     }
 
     /// <summary>
@@ -72,6 +71,16 @@ public class Grid : MonoBehaviour
         if (Input.GetKeyUp(KeyCode.LeftShift) || Input.GetKeyUp(KeyCode.RightShift))
         {
             isShiftCurrentlyHeldDown = false;
+        }
+
+        if (isShiftCurrentlyHeldDown && cursorGridBubble && CameraController.GetCurrentDistance() < 80f)
+        {
+            drawGridBubbleAroundCursor();
+            viewingGridmesh.enabled = true;
+        }
+        else
+        {
+            viewingGridmesh.enabled = false;
         }
     }
 
@@ -129,25 +138,31 @@ public class Grid : MonoBehaviour
         return result;
     }
 
+    /// <summary>
+    /// updates bubble gid position to match cursor
+    /// </summary>
     public void drawGridBubbleAroundCursor()
     {
-        if (cursorGridBubble && controller.GetCurrentDistance() < 120f && isShiftCurrentlyHeldDown) 
-        {
-            if (!mat)
-            {
-                Debug.LogError("Please Assign a material on the inspector");
-                return;
-            }
-            Vector3 cursor = controller.GetCursor();
-            
-            GL.Begin(GL.LINES);
-            mat.SetPass(0);
-            int amountOfGridToDraw = 100;
-            
-            // TODO
-            
-            GL.End();
-        }
+        viewingGridmesh.transform.position -= transform.position;
+        Vector3 newPosition = new Vector3(
+            CameraController.GetCursor().x - 1f,
+            0.5f + CameraController.GetCursor().y,
+            CameraController.GetCursor().z - 1f
+            );
+        viewingGridmesh.transform.position += transform.position;
+        viewingGridmesh.transform.position = newPosition;
+    }
+    
+    private Mesh CreateMesh() {
+        Mesh mesh = new Mesh();
+
+        mesh.name = "Grid Cell";
+        mesh.vertices = new Vector3[] { Vector3.zero, Vector3.zero, Vector3.zero, Vector3.zero };
+        mesh.triangles = new int[] { 0, 1, 2, 2, 1, 3 };
+        mesh.normals = new Vector3[] { Vector3.up, Vector3.up, Vector3.up, Vector3.up };
+        mesh.uv = new Vector2[] { new Vector2(1, 1), new Vector2(1, 0), new Vector2(0, 1), new Vector2(0, 0) };
+
+        return mesh;
     }
 
     /// <summary>
@@ -220,4 +235,56 @@ public class Grid : MonoBehaviour
             GL.End();
         }
     }
+
+    void initQuad()
+    {
+        viewingGridmesh = gameObject.AddComponent<MeshRenderer>();
+        viewingGridmesh.sharedMaterial = new Material(Shader.Find("Unlit/GridViewer"));
+
+        MeshFilter meshFilter = gameObject.AddComponent<MeshFilter>();
+
+        Mesh mesh = new Mesh();
+
+        Vector3[] vertices = new Vector3[4]
+        {
+            new Vector3(0, 0, 0),
+            new Vector3(2, 0, 0),
+            new Vector3(0, 0, 2),
+            new Vector3(2, 0, 2)
+        };
+        mesh.vertices = vertices;
+
+        int[] tris = new int[6]
+        {
+            0, 2, 1,
+            2, 3, 1
+        };
+        mesh.triangles = tris;
+
+        Vector3[] normals = new Vector3[4]
+        {
+            -Vector3.forward,
+            -Vector3.forward,
+            -Vector3.forward,
+            -Vector3.forward
+        };
+        mesh.normals = normals;
+
+        Vector2[] uv = new Vector2[4]
+        {
+            new Vector2(0, 0),
+            new Vector2(1, 0),
+            new Vector2(0, 1),
+            new Vector2(1, 1)
+        };
+        mesh.uv = uv;
+
+        meshFilter.mesh = mesh;
+    }
+    
+    
+    ///new shader technique
+    ///
+    /// gameObject.GetComponent<Renderer>().sharedMaterial.SetFloat("_YourParameter", someValue);
+
 }

@@ -4,64 +4,53 @@ using UnityEngine;
 public class CameraController : MonoBehaviour
 {
     #region variables
-    public Transform startPos; // Set up an empty object with the desired transform
-    
-    [Header("ZOOM criterions :")]
-    [Range(0.1f, 1.3f)]
-    public float sensitivity = 1.1f;
-    [Range(1f, 8f)]
-    public float scrollSpeed = 1.5f;
-    [Header("Multiplier : (used for multiplying & sampling timeout)")]
-    [Range(3f, 40f)]
-    public float scrollMultiplier = 36f;
-    [Header("lower is more sampling :")]
-    [Range(0.1f, 0.01f)]
-    public float scrollIncrementTimer = 0.01f;
-    [Header("PAN :")]
-    [Range(1f, 200f)]
-    public long panSpeed = 2;
-    
-    [Header("Careful : exponential")]
-    
-    [Range(1f, 7f)]
-    public long panMultiplier = 7;
-    // public bool inverted;
+    [Header("ZOOM speed : (10 - 100)")]
+	[Range(10f, 100f)]
+    public float scrollSpeed = 8f;
+	[Header("determines whether stronger scrolling accelerates scroll :")]
+	public bool scrollMultiplier = true;
+    [Header("PAN speed : (10 - 100)")]
+    [Range(10, 100)]
+    public float panSpeed = 80;
+	[Header("determines whether continued Panning accelerates pan :")]
+    public bool panMultiplier;
 
-    [Range(0f, 40f)]
-    public float distanceToGround = 5f;
+	// these two are hard locked now
+    private float distanceToGround = 0.2f; // cannot be lower without introducing bugs, cannot be higher without being unable to view buildings and units well enough 
+    private float scrollIncrementTimer = 0.0025f;
+
+
+
+	// markers for time multiplication
+    private bool panningHorizontaly;
+    private float subsequentHors = 1f;
     
+    private bool panningVerticaly;
+    private float subsequentVerts = 1f;
     
-    private Camera cam;
+    private bool scrolling;
+    private float subsequentScrolls = 1f;
+    private bool wasDoing2;
+    // end multiplication markers
+
+
+
+	public Transform startPos; // Set up an empty object with the desired transform
     private Rigidbody rb;
-    private Vector3 movement;
-
-    private Vector3 deadScrollPosition;
-
+    private Camera cam;
     private TerrainGenerator terrain;
-
-    private float threshHold;
-
-    private float distance;
-    
-    // markers for time multiplication
-    private bool panningHorizontaly = false;
-    private float continuousHorizontalPanCounter = 0f;
-    
-    private bool panningVerticaly = false;
-    private float continuousVerticalPanCounter = 0f;
-    
-    private bool scrolling = false;
-    private float continuousScrollsCounter = 0f;
-    // end markers
-
-    // avoiding multiple calls per frame to inputs
+    private Vector3 originalPosition;
+    private Vector3 deadScrollPosition;
+    private Vector3 movement;
+    private Vector3 cursor;
     private float horizontalPan = 0f;
     private float verticalPan = 0f;
     private float scrollWheel = 0f;
-
-    private Vector3 originalPosition;
-    private Vector3 cursor;
-    private float currentDistance = 250f; // generic non-zero value
+    private float threshHold;
+    private float distance;
+    private float currentDistance = 250f; //getter for outside calls, cannot be 0;
+	private bool isZoomingOut;
+	
     #endregion
 
     // Start is called before the first frame update
@@ -72,197 +61,236 @@ public class CameraController : MonoBehaviour
 
         terrain = GameObject.FindGameObjectWithTag("Terrain").GetComponent<TerrainGenerator>();
 
-        threshHold = terrain.height; // You can add more distance here 
+        threshHold = terrain.height;
         deadScrollPosition = new Vector3(terrain.xSize / 2f, 0f, terrain.ySize / 2f);
 
         originalPosition = startPos.position;
         distance = startPos.position.y - threshHold;
         
-        InvokeRepeating(nameof(CheckForRepeatInputs), scrollIncrementTimer, scrollIncrementTimer);
+		if (scrollMultiplier || panMultiplier) {
+        	InvokeRepeating(nameof(CheckForRepeatInputs), scrollIncrementTimer, scrollIncrementTimer);
+		}
     }
 
     public void CheckForRepeatInputs()
     {
-        // #1 #2 is dead code until to-do below is fixed
-        
-        // #1 HORIZONTAL
-        bool wasPanningHorizontaly = panningHorizontaly;
-        bool isPanningHorizontaly = Math.Abs(horizontalPan) > 0;
-        continuousHorizontalPanCounter = IncrementOrDecrementDoingCounter(continuousHorizontalPanCounter, isPanningHorizontaly, wasPanningHorizontaly);
-        panningHorizontaly = isPanningHorizontaly;
-        // #2 VERTICAL
-        bool wasPanningVerticaly = panningVerticaly;
-        bool isPanningVerticaly = Math.Abs(verticalPan) > 0;
-        continuousVerticalPanCounter = IncrementOrDecrementDoingCounter(continuousVerticalPanCounter, isPanningVerticaly, wasPanningVerticaly);
-        panningVerticaly = isPanningVerticaly;
-        // #3 SCROLL
-        bool wasScrolling = scrolling;
-        bool isScrolling = scrollWheel != 0;
-        continuousScrollsCounter = IncrementOrDecrementDoingCounter(continuousScrollsCounter, isScrolling, wasScrolling);
-        scrolling = isScrolling;
+		if(panMultiplier)
+		{	
+			// #1 HORIZONTAL
+        	bool wasPanningHorizontaly = panningHorizontaly;
+        	bool isPanningHorizontaly = Math.Abs(horizontalPan) > 0;
+        	subsequentHors = IncrementOrDecrementDoingCounter(subsequentHors, isPanningHorizontaly, wasPanningHorizontaly);
+        	panningHorizontaly = isPanningHorizontaly;
+        	// #2 VERTICAL
+        	bool wasPanningVerticaly = panningVerticaly;
+        	bool isPanningVerticaly = Math.Abs(verticalPan) > 0;
+        	subsequentVerts = IncrementOrDecrementDoingCounter(subsequentVerts, isPanningVerticaly, wasPanningVerticaly);
+        	panningVerticaly = isPanningVerticaly;
+		}
+		else
+		{
+        	// #3 SCROLL
+        	bool wasScrolling = scrolling;
+        	bool isScrolling = scrollWheel != 0;
+        	subsequentScrolls = IncrementOrDecrementDoingCounter(subsequentScrolls, isScrolling, wasScrolling);
+        	scrolling = isScrolling;
+		}
     }
 
-    /*
-     * this method has a lot of conditions that lay out an incrementing curve and a decrementing curve
-     * we're aiming for capped and temporarily permeated values that will serve both as a criterion for multiplying further
-     * and as a multiplier itself
-     */
+
     public float IncrementOrDecrementDoingCounter(float counter, bool isDoing, bool wasDoing)
     {
-        float result = 0f;
-        if (isDoing)
-        {
-            if (counter == 0f)
-            {
-                result = 1f;
-            }
-            else if (counter < scrollMultiplier)
-            {
-                if (wasDoing)
-                {
-                    result = counter * sensitivity * 2;
-                }
-                else
-                {
-                    result = counter * sensitivity; 
-                }
-            }
-        }
-        else if (counter > 0f)
-        {
-            if (!wasDoing)
-            {
-                if (counter < scrollMultiplier / 2f)
-                {
-                    counter = counter / 2f;
-                    if (counter < 2f)
-                    {
-                        result = 0f;
-                    }
-                }
-                else
-                {
-                    result = counter - (scrollMultiplier / 10);
-                }
-            }
-        }
-
-        return result;
+		// TODO	: look for a more optimized solution than this
+        // (this is already a thousand times better than my previous multiplier code, but still could be way better)
+		// (I just don't know how)
+		float ret = 2f;
+		if (wasDoing && isDoing)
+		{
+			ret = 3f;
+		}
+		if (!wasDoing && !isDoing)
+		{	
+			if (!wasDoing2) {
+				ret = 1f;
+			}
+			wasDoing2 = false;
+		} else {
+			if(wasDoing || isDoing) {
+				wasDoing2 = true;
+			}
+		}
+        return ret;
     }
 
     // Update is called once per frame
     void Update()
     {
-        // #1 HORIZONTAL 
-        float horizontal = Input.GetAxis("Horizontal") * panSpeed * Time.deltaTime;
-        // #2 VERTICAL
-        float vertical = Input.GetAxis("Vertical") * panSpeed * Time.deltaTime;
+        // Finds position of the mouse
+        Ray ray = cam.ScreenPointToRay(Input.mousePosition);
+        RaycastHit hit;
+		bool ourRaycastHitSomething = false;
+		if (Physics.Raycast(ray, out hit))
+        {
+			ourRaycastHitSomething = true;
+            // store the hit point for external use
+            cursor = hit.point;
+		}
 
-        movement = new Vector3(-horizontal, 0f, -vertical);
-        
-        //TODO : implement a more functional version of the following copy of the pan code, the idea is to avoid
-        // unnecessary redundant calls and to globalize the horizontal and vertical pon variables
-        // also we can test having reached max pan or not and do nothing if attempting to pan even further than max
-        
-        // horizontalPan = Input.GetAxis("Horizontal");
-        // if (Math.Abs(horizontalPan) > 0)
-        // {
-        //     if (Pow(panSpeed, panMultiplier) < originalPosition.x * 2)
-        //     {
-        //         movement = new Vector3(-(Pow(panSpeed, panMultiplier) * Time.deltaTime * horizontalPan), 0f, 0f);
-        //     }
-        // }
-        //
-        // 
-        // verticalPan = Input.GetAxis("Vertical"); ;
-        // if (Math.Abs(verticalPan) > 0)
-        // {
-        //     if (Pow(panSpeed, panMultiplier) < originalPosition.z * 2)
-        //     {
-        //         movement = new Vector3(0f, 0f, -(Pow(panSpeed, panMultiplier)  * Time.deltaTime * verticalPan ));
-        //     }
-        // }
+		var position = transform.position;
+
+		
+        // #1 HORIZONTAL
+		horizontalPan = Input.GetAxis("Horizontal");
+		float horizontal = 0f;
+		void addHors ()
+        {
+            horizontal = horizontalPan * panSpeed * subsequentHors * currentDistance / 120f * Time.deltaTime;
+        };
+		// TODO : make these values not hard; currently they fit a 256x256 map with 250 max zoom,
+		// but what if those values change?
+
+		if (position.x < 256f && position.x > 0f)
+		{
+			 addHors ();
+		}
+		else
+		{
+			if (position.x > 0f)
+			{
+				if (horizontalPan > 0f)
+				{
+					addHors ();
+				}
+			}
+			else
+			{
+				if (horizontalPan < 0f)
+				{
+					addHors ();
+				}
+			}
+		}
+		// #2 VERTICAL
+		verticalPan = Input.GetAxis("Vertical");
+        float vertical = 0f;
+		void addVert ()
+		{
+			vertical = verticalPan * panSpeed * subsequentVerts * currentDistance / 120f * Time.deltaTime;
+		}
+		if (position.z < 256f && position.z > 0f )
+		{
+			 addVert ();
+		}
+		else
+		{
+			if (position.z > 0f)
+			{
+				if (verticalPan > 0f)
+				{
+					addVert ();
+				}
+			}
+			else
+			{
+				if (verticalPan < 0f)
+				{
+					addVert ();
+				}
+			}
+		}
+
+		movement = new Vector3(-horizontal, 0f, -vertical);
         
         // #3 SCROLL
         scrollWheel = Input.GetAxis("Mouse ScrollWheel");
         if (scrollWheel != 0)
         {
-            // curPos = transform.position;
-            var position = transform.position;
-            
+			isZoomingOut = false;
             // if scrolling in (must not bypass threshold, otherwise, do nothing)
             if (scrollWheel > 0.001 && position.y > (threshHold + distanceToGround))
-            {
-                // Finds position of the mouse
-                Ray ray = cam.ScreenPointToRay(Input.mousePosition);
-                RaycastHit hit;
-    
+            {    
                 // Shoots the ray
-                if (Physics.Raycast(ray, out hit))
+                if (ourRaycastHitSomething)
                 {
-                    // store the hit point for external use
-                    cursor = hit.point;
-
                     // resets the threshold based on current zoom point
                     threshHold = hit.point.y + distanceToGround;
+
+					// checks for and fixes aberant values in our raycast
+					if(hit.point.y < 0) {
+						cursor.y = 0;
+					}
                     
                     // Finds angle & Moves to the target point
-                    MoveToPointWithAccelerationCalculation(position, hit.point - position);
+                    MoveToPointWithAccelerationCalculation(position, cursor - position, true);
                 }
                 else
                 {
                     // Finds angle & Moves to the dead scroll pos
-                    MoveToPointWithAccelerationCalculation(position, deadScrollPosition - position);
+                    MoveToPointWithAccelerationCalculation(position, deadScrollPosition - position, true);
                 }
-                // NOTE: We can also use this method for the selection methods : noted! I thought the same :)
             }
             
             else if (scrollWheel == 0)
             {
+				isZoomingOut = false;
                 return;
             }
             
             else if (position != originalPosition && scrollWheel < 0.001)
             {
-                // if "close enough" to start position just set start position
-                if (position.y >= originalPosition.y - 2)
+				isZoomingOut = true;
+                // if "close enough" to start position just snap back to start position
+                if (position.y >= originalPosition.y - 60)
                 {
                     transform.position = originalPosition;
                 }
                 else
                 {
                     // Finds angle to startPos and Moves to startPos
-                    MoveToPointWithAccelerationCalculation(position, startPos.position - position);
+                    MoveToPointWithAccelerationCalculation(position, startPos.position - position, false);
                 }
             }
         }
     }
 
-    public void MoveToPointWithAccelerationCalculation(Vector3 position, Vector3 direction)
+    public void MoveToPointWithAccelerationCalculation(Vector3 position, Vector3 direction, bool zoomingIn)
     {
         // stores distance for external use
         currentDistance = position.y - direction.y;
-        
-        // accelerating scroll according to how much you scrolled but not too much.
-        float heightMult = position.y < threshHold * 1.5f ? 10f : position.y;
-        float mult = heightMult / (originalPosition.y / continuousScrollsCounter < scrollMultiplier ?
-            continuousScrollsCounter == 0 ? 1f : continuousScrollsCounter : scrollMultiplier);
+        float inOrOutMult = zoomingIn ? 40f : position.y;
+		
+		float times = scrollSpeed * inOrOutMult / 800f;
+		if (scrollMultiplier) {// accelerating scroll according to how much you scrolled but not too much.
+			times = scrollSpeed * inOrOutMult * subsequentScrolls / 800f;
+		}
         
         Vector3 tempPosition = position;
-        tempPosition += mult * scrollSpeed * Time.deltaTime * direction;
-        if (tempPosition.y > threshHold)
-        {
+        tempPosition += times * Time.deltaTime * direction;
+
+		//if (Mathf.Abs(position.x - tempPosition.x) > Mathf.Abs(position.y - tempPosition.y) || Mathf.Abs(position.z - tempPosition.z) > Mathf.Abs(position.y - tempPosition.y))
+		//{
+			// going further laterally then vertically.
+			// this zooming/de-zooming type is prohibited by default. but allowed when camera is rotated. 
+		//}
+		//else
+		//{
+			
+        	if (tempPosition.y <= 0) {
+				Debug.Log("BANG ! Went under 0 : " + tempPosition.y);
+				position += Time.deltaTime * direction;
+			}
+			else if (tempPosition.y > threshHold)
+        	{
             position = tempPosition;
-        }
-        // god forbid, our math above creates an aberrant multiplier in the trillions or above...,
-        // we rectify with a more conservative multiplier : just scrollSpeed
-        // this should avoid the camera instantly crashing into the ground
-        // realistically this else is not entered is serves as an error catch
-        else
-        {
-            position += scrollSpeed * Time.deltaTime * direction;
-        }
-        transform.position = position;
+        	}
+			else
+        	{
+				Debug.Log("BANG ! exploded our threshold : " + tempPosition.y + " threshhold " + threshHold);
+            	position += scrollSpeed/10 * Time.deltaTime * direction;
+        	}
+        	transform.position = position;
+		//}
+        
     }
     
     // FixedUpdated is called possibly multiple times per frame
@@ -295,5 +323,10 @@ public class CameraController : MonoBehaviour
     public Vector3 GetCursor()
     {
         return cursor;
+    }
+    
+    public bool GetZoomingOut()
+    {
+        return isZoomingOut;
     }
 }
