@@ -146,7 +146,7 @@ public class Grid : MonoBehaviour
         viewingGridmesh.transform.position -= transform.position;
         Vector3 newPosition = new Vector3(
             CameraController.GetCursor().x - 1f,
-            0.5f + CameraController.GetCursor().y,
+            CameraController.GetCursor().y,
             CameraController.GetCursor().z - 1f
             );
         viewingGridmesh.transform.position += transform.position;
