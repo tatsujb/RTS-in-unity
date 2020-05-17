@@ -37,9 +37,7 @@ public class TerrainGenerator : MonoBehaviour
     {
         
         terrain = GetComponent<Terrain>();
-        surface = GameObject.FindGameObjectWithTag("NavMesh").GetComponent<NavMeshSurface>();
-
-        
+        surface = GameObject.FindGameObjectWithTag("NavMesh").GetComponent<NavMeshSurface>();        
 
         if (generateOnStart)
         {
