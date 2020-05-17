@@ -13,7 +13,7 @@ public class Unit : MonoBehaviour
 
     public Material defaultMatirial, highlightMatirial;
 
-    public GameObject rotator;
+    public Transform rotator;
 
     bool selected;
 
@@ -68,7 +68,9 @@ public class Unit : MonoBehaviour
 
         if (otherUnit != null && otherUnit.player != player)
         {
-            // Rotation
+
+
+            //rotator.Rotate();
 
             // Attack();
         }
