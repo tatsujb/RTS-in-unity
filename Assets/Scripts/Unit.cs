@@ -6,14 +6,20 @@ using UnityEngine.AI;
 public class Unit : MonoBehaviour
 {
     #region variables
+    public string player;
+
+    public float range;
+    public float damage;
+
     public Material defaultMatirial, highlightMatirial;
 
-    public string player;
+    public GameObject rotator;
 
     bool selected;
 
     Renderer mRenderer;
     NavMeshAgent agent;
+    SphereCollider colliderS;
     #endregion
 
     // Start is called before the first frame update
@@ -21,8 +27,10 @@ public class Unit : MonoBehaviour
     {
         mRenderer = GetComponent<Renderer>();
         agent = GetComponent<NavMeshAgent>();
+        colliderS = GetComponent<SphereCollider>();
 
         mRenderer.material = defaultMatirial;
+        colliderS.radius = range;
     }
 
     // Update is called once per frame
@@ -52,5 +60,17 @@ public class Unit : MonoBehaviour
     public void SetSelection(bool selection)
     {
         selected = selection;
+    }
+
+    private void OnTriggerStay(Collider other)
+    {
+        Unit otherUnit = other.GetComponent<Unit>();
+
+        if (otherUnit != null && otherUnit.player != player)
+        {
+            // Rotation
+
+            // Attack();
+        }
     }
 }
