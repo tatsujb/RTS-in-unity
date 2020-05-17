@@ -33,13 +33,12 @@ public class Grid : MonoBehaviour
     private MeshRenderer viewingGridmesh;
     
     private Vector3[] visibleNavMesh;
-    
+
     private bool isShiftCurrentlyHeldDown;
-    private int count;
 
     // private NavMeshSurface surface;
     
-    // THIS IS HOW MUSH SMALLER THAN 1 DIGIT (in unityà OUR SQUALE IS FOR THE ENTIRE PROJECT
+    // THIS IS HOW MUSH SMALLER THAN 1 DIGIT (in unity) OUR SQUALE IS FOR THE ENTIRE PROJECT
     // WE USE THIS TO CREATE THE GRID
     // IF MODIFIED, ORIGINAL VALUE WAS 14f
     private static float divisionFactor = 14f;
@@ -47,19 +46,34 @@ public class Grid : MonoBehaviour
     
     private void Start()
     {
-        count = 0;
-        
-        var triangles = UnityEngine.AI.NavMesh.CalculateTriangulation();
-        Vector3[] visibleNavMesh = triangles.vertices;
+        //var triangles = UnityEngine.AI.NavMesh.CalculateTriangulation();
+        //Vector3[] visibleNavMesh = triangles.vertices;
 
-        Debug.Log("this is navMesh : " + visibleNavMesh);
+        //Debug.Log("this is navMesh : " + visibleNavMesh);
 
         initQuad();
+
+        InvokeRepeating(nameof(ChangeColor), 2, 2);
+    }
+
+    private bool isStepOne;
+
+    void ChangeColor()
+    {
+        if (isStepOne)
+        {
+            viewingGridmesh.GetComponent<Renderer>().sharedMaterial.SetColor("_Color", new Color(0, 1, 0, 1));
+        }
+        else
+        {
+            viewingGridmesh.GetComponent<Renderer>().sharedMaterial.SetColor("_Color", new Color(1, 0, 0, 1));
+        }
+
+        isStepOne = !isStepOne;
     }
 
     /// <summary>
-    /// so far as I can tell update cannot be used to draw lines either runtime or editor-time
-    /// But I use it to grab Shift key
+    /// I use update to grab Shift key
     /// </summary>
     void Update()
     {
@@ -107,7 +121,6 @@ public class Grid : MonoBehaviour
     /// <returns></returns>
     public Vector3 GetNearestPointOn3DGrid(Vector3 position)
     {
-        count++;
         float record = position.x;
         
         position -= transform.position;
@@ -130,11 +143,6 @@ public class Grid : MonoBehaviour
 
         result += transform.position;
 
-        if (count % 7 == 0)
-        {
-            Debug.Log("First time called intial value was : " + record + " outcome : " + position.x + " count : " + count );
-        }
-        
         return result;
     }
 
