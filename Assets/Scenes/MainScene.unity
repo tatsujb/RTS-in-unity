@@ -649,9 +649,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a858c07d906a01a4c83fba0df9ce6c2e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  scrollSpeed: 3.12
+  scrollSpeed: 80
   scrollMultiplier: 1
-  distanceToGround: 0
+  distanceToGround: 0.4
   panSpeed: 80
   panMultiplier: 1
   startPos: {fileID: 1448473484}
