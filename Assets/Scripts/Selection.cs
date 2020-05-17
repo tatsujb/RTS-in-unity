@@ -4,6 +4,12 @@ using UnityEngine;
 
 public class Selection : MonoBehaviour
 {
+    #region variables 
+
+    public string player;
+
+    #endregion
+
     // Start is called before the first frame update
     void Start()
     {
@@ -23,7 +29,7 @@ public class Selection : MonoBehaviour
                 Transform selection = hit.transform;
 
                 Unit selectionUnit = selection.gameObject.GetComponent<Unit>();
-                if (selectionUnit != null)
+                if (selectionUnit != null && selectionUnit.player == player)
                 {
                     selectionUnit.SetSelection(true);
                 }

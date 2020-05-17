@@ -8,6 +8,8 @@ public class Unit : MonoBehaviour
     #region variables
     public Material defaultMatirial, highlightMatirial;
 
+    public string player;
+
     bool selected;
 
     Renderer mRenderer;
