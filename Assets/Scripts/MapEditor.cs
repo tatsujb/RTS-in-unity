@@ -30,6 +30,20 @@ public class MapEditor : MonoBehaviour
         terrain.Generate(true);
     }
 
+    public void ChangeOffsetX(float amount)
+    {
+        terrain.xOffset += amount;
+
+        terrain.Generate(true);
+    }
+
+    public void ChangeOffsetY(float amount)
+    {
+        terrain.yOffset += amount;
+
+        terrain.Generate(true);
+    }
+
     public void ChangeScale()
     {
         terrain.noiseScale = scaleSlider.value;
