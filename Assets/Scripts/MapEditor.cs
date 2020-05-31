@@ -1,10 +1,13 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class MapEditor : MonoBehaviour
 {
     #region variables
+    public Slider scaleSlider;
+
     TerrainGenerator terrain;
     #endregion
 
@@ -23,6 +26,13 @@ public class MapEditor : MonoBehaviour
     public void ChangeHeight(float amount)
     {
         terrain.height += amount;
+
+        terrain.Generate(true);
+    }
+
+    public void ChangeScale()
+    {
+        terrain.noiseScale = scaleSlider.value;
 
         terrain.Generate(true);
     }
