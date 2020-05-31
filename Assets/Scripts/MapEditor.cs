@@ -20,34 +20,44 @@ public class MapEditor : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        // terrain.Generate(true);
-    }
-
-    public void ChangeHeight(float amount)
-    {
-        terrain.height += amount;
-
-        terrain.Generate(true);
+        // terrain.Generate(false);
     }
 
     public void ChangeOffsetX(float amount)
     {
         terrain.xOffset += amount;
 
-        terrain.Generate(true);
+        terrain.Generate(false);
     }
 
     public void ChangeOffsetY(float amount)
     {
         terrain.yOffset += amount;
 
-        terrain.Generate(true);
+        terrain.Generate(false);
+    }
+
+    public void ChangeHeight(float amount)
+    {
+        terrain.height += amount;
+
+        terrain.Generate(false);
+    }
+
+    public void ChangeOctaves(int amount)
+    {
+        terrain.octaves += amount;
+
+        if (terrain.octaves <= 0)
+            terrain.octaves = 1;
+
+        terrain.Generate(false);
     }
 
     public void ChangeScale()
     {
         terrain.noiseScale = scaleSlider.value;
 
-        terrain.Generate(true);
+        terrain.Generate(false);
     }
 }
