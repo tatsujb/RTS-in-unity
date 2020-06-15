@@ -68,9 +68,11 @@ public class Unit : MonoBehaviour
 
         if (otherUnit != null && otherUnit.player != player)
         {
-
-
-            //rotator.Rotate();
+            Vector3 lookPos = other.gameObject.transform.position;
+            lookPos = lookPos - transform.position;
+            float angle = Mathf.Atan2(lookPos.z, lookPos.x) * Mathf.Rad2Deg;
+            rotator.rotation = Quaternion.AngleAxis(-angle, Vector3.up);
+            Debug.Log(angle);
 
             // Attack();
         }
